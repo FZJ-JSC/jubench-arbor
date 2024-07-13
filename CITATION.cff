@@ -20,7 +20,7 @@ identifiers:
   - type: doi
     value: 10.5281/zenodo.5745504
     description: Version-agnostic Zenodo Identifier
-repository-code: 'https://github.com/FZJ-JSC/jubench/'
+repository-code: 'https://github.com/FZJ-JSC/jubench-arbor/'
 license: MIT
 date-released: '2024-07-13'
 references:
