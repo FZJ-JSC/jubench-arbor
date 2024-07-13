@@ -1,0 +1,291 @@
+name: Arbor-EXA
+outpath: run
+
+parameterset:
+  - name: globalParameter
+    parameter:
+      # For selecting things, currently not used
+      - name: systemname
+        mode: shell
+        _: "(cat /etc/FZJ/systemname 2>/dev/null || echo \"local\") | tr -d \"\\n\""
+      # TODO Load these before doing anything
+      - name: modules
+        _: module load Stages/2024 CMake/3.26.3 NVHPC/23.7-CUDA-12 CUDA/12 ParaStationMPI/5.9.2-1 Python/3.11.3 PyYAML/6.0 JUBE/2.6.1
+      - name: sourcebase
+        _: $jube_benchmark_home/../../src/
+  - name: compileParameter
+    parameter:
+      # TODO compiler
+      - name: cxx
+        _: g++
+      - name: cc
+        _: gcc
+      # TODO SIMD arch to use
+      - name: arch
+        _: native
+      # configuration options, should be left fixed.
+      - name: simd
+        _: ON
+      - name: mpi
+        _: ON
+      - name: gpu
+        _: cuda
+  - name: systemParameter
+    init_with: platform.xml
+    parameter:
+      # Load modules at start.
+      - name: preprocess
+        _: $modules
+      # Binary to run + input deck
+      - name: executable
+        _: build-busyring/ring-build/arbor-busyring
+      - name: args_exec
+        _: input.json
+      # TODO node counts
+      ## On JUWELS booster, TCO baseline is run at 8 nodes x 4 A100
+      - name: nodes
+        tag: baseline
+        _: 8
+      ## On JUWELS booster, high scaling is run at 642 nodes x 4 A100 ~ 50 PF
+      ## Final benchmarks should run at 20x that compute capaticity!
+      - name: nodes
+        tag: "exa_large|exa_medium|exa_small|exa_tiny"
+        _: 642
+      ## On JUWELS booster, high scaling is run at 642 nodes x 4 A100 ~ 50 PF
+      ## This is used for validating
+      - name: nodes
+        tag: "high_large|high_medium|high_small|high_tiny"
+        _: 642
+      ## Scaling experiments
+      - name: nodes
+        tag: scaling_base
+        _: 4, 6, 8, 12, 16
+      - name: nodes
+        tag: "scaling_large|scaling_medium|scaling_small|scaling_tiny"
+        _: 10, 20, 40, 80, 160, 320
+      # TODO GPU/node
+      - name: n_gpu
+        _: 4
+      # One MPI rank per GPU; constant
+      - name: taskspernode
+        _: $n_gpu
+      # TODO Use 12 threads per MPI rank, only useful during setup.
+      - name: threadspertask
+        _: 12
+      # Timeout, should be more than sufficient.
+      - name: timelimit
+        _: 90
+      # TODO Accounting
+      - name: account
+        _: jscbenchmark
+      # Send no mails
+      - name: mail
+        _: ""
+      # TODO SLURM queue/partition
+      - name: queue
+        tag: "baseline|scaling_base|scaling_tiny|scaling_small|scaling_medium|scaling_large"
+        _: booster
+      - name: queue
+        tag: "exa_tiny|exa_small|exa_medium|exa_large|high_tiny|high_small|high_medium|high_large"
+        _: largebooster
+      # Request GPUs.
+      - name: gres
+        _: gpu:$n_gpu
+  - name: inputParameter
+    parameter:
+      # Tree depth of artificial cell; constant.
+      - name: depth
+        type: int
+        _: 10
+      # Fixed benchmark cases:
+      ## TCO baseline = large memory * 8 nodes on Juwels Booster
+      - name: cells
+        tag: "baseline"
+        type: int
+        mode: python
+        _: "192000*8"
+      ## Exa scaling | large memory = 20 x 50 PF @ 160 GB/node
+      - name: cells
+        tag: "exa_large"
+        type: int
+        mode: python
+        _: "192000*642*20"
+      ## Exa scaling | medium memory = 20 x 50 PF @ 120 GB/node
+      - name: cells
+        tag: "exa_medium"
+        type: int
+        mode: python
+        _: "144000*642*20"
+      ## Exa scaling | small memory = 20 x 50 PF @ 80 GB/node
+      - name: cells
+        tag: "exa_small"
+        type: int
+        mode: python
+        _: "96000*642*20"
+      ## Exa scaling | small memory = 20 x 50 PF @ 30 GB/node
+      - name: cells
+        tag: "exa_tiny"
+        type: int
+        mode: python
+        _: "44000*642*20"
+      ## High scaling | large memory = 20 x 50 PF @ 160 GB/node
+      - name: cells
+        tag: "high_large"
+        type: int
+        mode: python
+        _: "192000*642"
+      ## High scaling | medium memory = 20 x 50 PF @ 120 GB/node
+      - name: cells
+        tag: "high_medium"
+        type: int
+        mode: python
+        _: "144000*642"
+      ## High scaling | small memory = 20 x 50 PF @ 80 GB/node
+      - name: cells
+        tag: "high_small"
+        type: int
+        mode: python
+        _: "96000*642"
+      ## High scaling | small memory = 20 x 50 PF @ 80 GB/node
+      - name: cells
+        tag: "high_tiny"
+        type: int
+        mode: python
+        _: "44000*642"
+      # Scaling Experiments at different memory loads.
+      - name: cells
+        tag: "scaling_large|scaling_base"
+        type: int
+        mode: python
+        _: "192000*${nodes}"
+      - name: cells
+        tag: "scaling_medium"
+        type: int
+        mode: python
+        _: "144000*${nodes}"
+      - name: cells
+        tag: "scaling_small"
+        type: int
+        mode: python
+        _: "96000*${nodes}"
+      - name: cells
+        tag: "scaling_tiny"
+        type: int
+        mode: python
+        _: "44000*${nodes}"
+  - name: executeset
+    init_with: platform.xml
+    parameter:
+      - name: args_starter
+        _: --cpus-per-task=$threadspertask
+
+fileset:
+  name: input
+  copy: input.json.in
+
+substituteset:
+  name: substitute
+  iofile: {in: input.json.in, out: input.json}
+  sub:
+    - { source: "#cells#", dest: $cells }
+    - { source: "#depth#", dest: $depth }
+
+step:
+  - name: build-arbor
+    use:
+      - globalParameter
+      - compileParameter
+    do:
+      - $modules
+      - >-
+         cmake -S $sourcebase/arbor -B arbor-build -DARB_USE_BUNDLED_LIBS=ON
+         -DCMAKE_INSTALL_PREFIX=./arbor-install
+         -DCMAKE_CXX_COMPILER=$cxx -DCMAKE_C_COMPILER=$cc
+         -DCMAKE_BUILD_TYPE=release
+         -DARB_VECTORIZE=$simd -DARB_ARCH=$arch
+         -DARB_GPU=$gpu
+         -DARB_WITH_MPI=$mpi
+      - cmake --build arbor-build
+      - cmake --install arbor-build --prefix ./arbor-install
+  - name: build-busyring
+    depend: build-arbor
+    use:
+      - globalParameter
+      - compileParameter
+    do:
+      - $modules
+      - >-
+         cmake -S $sourcebase/nsuite/benchmarks/engines/busyring/arbor -B ring-build
+         -DCMAKE_POLICY_DEFAULT_CMP0074=NEW
+         -Darbor_ROOT=build-arbor/arbor-install/lib64/cmake/arbor/
+         -DCMAKE_CXX_COMPILER=$cxx -DCMAKE_C_COMPILER=$cc
+         -DCMAKE_BUILD_TYPE=release
+      - cmake --build ring-build
+  - name: run-busyring
+    depend: build-busyring
+    use:
+      - systemParameter
+      - executeset
+      - inputParameter
+      - input
+      - substitute
+      - from: platform.xml
+        _: jobfiles
+      - from: platform.xml
+        _: executesub
+    do:
+      done_file: $ready_file
+      _: $submit $submit_script
+
+patternset:
+  name: patterns
+  pattern:
+    - name: ranks
+      type: int
+      _: "ranks:[ \t]+$jube_pat_int"
+    - name: threads
+      type: int
+      _: "threads:[ \t]+$jube_pat_int"
+    - name: has_gpu
+      type: string
+      _: "gpu:[ \t]+(yes|no)"
+    - name: t_init
+      type: float
+      _: "model-init[ \t]+$jube_pat_fp"
+    - name: t_run
+      type: float
+      _: "model-run[ \t]+$jube_pat_fp"
+    - name: n_spike
+      type: int
+      _: "$jube_pat_int spikes generated at rate of $jube_pat_nfp ms between spikes"
+    - name: branches
+      type: int
+      _: "cell stats: $jube_pat_nint cells; $jube_pat_int branches; $jube_pat_nint compartments;"
+    - name: compartments
+      type: int
+      _: "cell stats: $jube_pat_nint cells; $jube_pat_nint branches; $jube_pat_int compartments;"
+
+analyser:
+  name: extract
+  use: patterns
+  analyse:
+    step: run-busyring
+    file: job.out
+
+result:
+  use: extract
+  table:
+    name: result
+    style: pretty
+    sort: cells, depth, branches, compartments, ranks, threads, has_gpu, t_init, t_run
+    column:
+      - cells
+      - depth
+      - branches
+      - compartments
+      - ranks
+      - threads
+      - has_gpu
+      - t_init
+      - t_run
+      - n_spike
