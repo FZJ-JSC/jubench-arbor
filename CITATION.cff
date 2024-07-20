@@ -5,15 +5,15 @@ message: >-
 authors:
   - given-names: Thorsten
     family-names: Hater
-    affiliation: Forschunsgzentrum Jülich, Jülich Supercomputing Centre
+    affiliation: Forschungszentrum Jülich, Jülich Supercomputing Centre
     orcid: 'https://orcid.org/0000-0002-6249-7169'
   - given-names: Andreas
     family-names: Herten
-    affiliation: Forschunsgzentrum Jülich, Jülich Supercomputing Centre
+    affiliation: Forschungszentrum Jülich, Jülich Supercomputing Centre
     orcid: 'https://orcid.org/0000-0002-7150-2505'
   - given-names: Jayesh
     family-names: Badwaik
-    affiliation: Forschunsgzentrum Jülich, Jülich Supercomputing Centre
+    affiliation: Forschungszentrum Jülich, Jülich Supercomputing Centre
     orcid: 'https://orcid.org/0000-0002-5252-8179'
 abstract: "The Arbor benchmark of the JUPITER Benchmark Suite"
 identifiers:
