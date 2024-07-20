@@ -18,7 +18,7 @@ authors:
 abstract: "The Arbor benchmark of the JUPITER Benchmark Suite"
 identifiers:
   - type: doi
-    value: 10.5281/zenodo.5745504
+    value: 10.5281/zenodo.12737757
     description: Version-agnostic Zenodo Identifier
 repository-code: 'https://github.com/FZJ-JSC/jubench-arbor/'
 license: MIT
