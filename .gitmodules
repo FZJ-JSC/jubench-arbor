@@ -1,3 +1,6 @@
 [submodule "src/arbor"]
 	path = src/arbor
 	url = https://github.com/thorstenhater/arbor.git
+[submodule "src/nsuite"]
+	path = src/nsuite
+	url = https://github.com/thorstenhater/nsuite
